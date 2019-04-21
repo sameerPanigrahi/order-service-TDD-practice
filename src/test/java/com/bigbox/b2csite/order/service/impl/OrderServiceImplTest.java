@@ -6,12 +6,14 @@ import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import com.bigbox.b2csite.common.DataAccessException;
+import com.bigbox.b2csite.common.ServiceException;
 import com.bigbox.b2csite.order.dao.OrderDao;
 import com.bigbox.b2csite.order.model.domain.OrderSummary;
 import com.bigbox.b2csite.order.model.entity.OrderEntity;
@@ -73,24 +75,40 @@ public class OrderServiceImplTest {
 	}
 
 	@Test
-	@Ignore
 	public void test_openNewOrder_successfullyRetriesDataInsert() throws Exception {
 
+		// Sameer's code
 		// Setup
+		// mockOrderDao is initiated
+		// and set in target OrderServiceImpl in the @Before method
+
+		Mockito
+				.when(mockOrderDao.insert(Matchers.any(OrderEntity.class)))
+				.thenThrow(new DataAccessException("First Execution"))
+				.thenReturn(1);
 
 		// Execution
+		target.openNewOrder(CUSTOMER_ID);
 
 		// Verification
+		Mockito.verify(mockOrderDao, Mockito.times(2)).insert(Matchers.any(OrderEntity.class));
+
 	}
 
-	@Test
-	@Ignore
+	@Test(expected = ServiceException.class)
+	// @Test takes 2 optional parameters -
+	// 'expected' exception object and 'timeout' parameter
 	public void test_openNewOrder_failedDataInsert() throws Exception {
 
 		// Setup
+		Mockito.when(mockOrderDao.insert(Matchers.any(OrderEntity.class)))
+				.thenThrow(new DataAccessException("First Try"))
+				.thenThrow(new DataAccessException("Second Try"));
 
 		// Execution
+		target.openNewOrder(CUSTOMER_ID);
 
 		// Verification
+		Mockito.verify(mockOrderDao, Mockito.times(2)).insert(Matchers.any(OrderEntity.class));
 	}
 }
