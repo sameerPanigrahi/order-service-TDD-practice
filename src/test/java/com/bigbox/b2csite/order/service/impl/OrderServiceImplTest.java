@@ -7,6 +7,7 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -19,6 +20,7 @@ import com.bigbox.b2csite.order.model.domain.OrderSummary;
 import com.bigbox.b2csite.order.model.entity.OrderEntity;
 import com.bigbox.b2csite.order.model.entity.OrderItemEntity;
 import com.bigbox.b2csite.order.model.transformer.OrderEntityToOrderSummaryTransformer;
+import com.bigbox.b2csite.order.service.OrderTaxService;
 
 public class OrderServiceImplTest {
 
@@ -100,6 +102,7 @@ public class OrderServiceImplTest {
 	// 'expected' exception object and 'timeout' parameter
 	public void test_openNewOrder_failedDataInsert() throws Exception {
 
+		// Sameer's code
 		// Setup
 		Mockito.when(mockOrderDao.insert(Matchers.any(OrderEntity.class)))
 				.thenThrow(new DataAccessException("First Try"))
@@ -110,5 +113,39 @@ public class OrderServiceImplTest {
 
 		// Verification
 		Mockito.verify(mockOrderDao, Mockito.times(2)).insert(Matchers.any(OrderEntity.class));
+	}
+
+	@Test
+	public void test_inorder_Discount_Tax() throws ServiceException, DataAccessException {
+
+		// Sameer's code
+		// Setup
+		OrderDiscountServiceImpl mockDiscount = Mockito.mock(OrderDiscountServiceImpl.class);
+		Mockito
+				.when(mockDiscount.setDiscount(Matchers.any(OrderEntity.class)))
+				.thenCallRealMethod();
+
+		OrderTaxService mockTax = Mockito.mock(OrderTaxServiceImpl.class);
+		Mockito
+				.when(mockTax.deductTax(Matchers.any(OrderEntity.class)))
+				.thenCallRealMethod();
+
+		Mockito
+				.when(mockOrderDao.insert(Matchers.any(OrderEntity.class)))
+				.thenReturn(1);
+
+		target.setOrderDiscountService(mockDiscount);
+		target.setOrderTaxService(mockTax);
+
+		// Execution
+		target.openNewOrder(CUSTOMER_ID);
+
+		// Verification
+		InOrder inorder = Mockito.inOrder(mockDiscount, mockTax);
+		// first in sequence
+		inorder.verify(mockDiscount).setDiscount(Matchers.any(OrderEntity.class));
+		// second in sequence
+		inorder.verify(mockTax).deductTax(Matchers.any(OrderEntity.class));
+
 	}
 }
