@@ -7,6 +7,7 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Matchers;
 import org.mockito.Mock;
@@ -140,12 +141,51 @@ public class OrderServiceImplTest {
 		// Execution
 		target.openNewOrder(CUSTOMER_ID);
 
-		// Verification
+		// Verification of inorder sequence of Discount and Tax
 		InOrder inorder = Mockito.inOrder(mockDiscount, mockTax);
 		// first in sequence
 		inorder.verify(mockDiscount).setDiscount(Matchers.any(OrderEntity.class));
 		// second in sequence
 		inorder.verify(mockTax).deductTax(Matchers.any(OrderEntity.class));
+	}
+
+	@Test
+	public void test_InorderDiscountTax_OnSameEntity() throws ServiceException, DataAccessException {
+
+		// Sameer's code
+		// Setup
+		OrderDiscountServiceImpl mockDiscount = Mockito.mock(OrderDiscountServiceImpl.class);
+		Mockito
+				.when(mockDiscount.setDiscount(Matchers.any(OrderEntity.class)))
+				.thenCallRealMethod();
+
+		OrderTaxService mockTax = Mockito.mock(OrderTaxServiceImpl.class);
+		Mockito
+				.when(mockTax.deductTax(Matchers.any(OrderEntity.class)))
+				.thenCallRealMethod();
+
+		Mockito
+				.when(mockOrderDao.insert(Matchers.any(OrderEntity.class)))
+				.thenReturn(1);
+
+		target.setOrderDiscountService(mockDiscount);
+		target.setOrderTaxService(mockTax);
+
+		// Execution
+		target.openNewOrder(CUSTOMER_ID);
+
+		// Verification of inorder for the same Object Entity using Argument capture
+		ArgumentCaptor<OrderEntity> orderEntityCaptor = ArgumentCaptor.forClass(OrderEntity.class);
+		InOrder inorder = Mockito.inOrder(mockDiscount, mockTax);
+		// first in sequence
+		inorder.verify(mockDiscount).setDiscount(orderEntityCaptor.capture());
+		OrderEntity o1 = orderEntityCaptor.getValue();
+		// second in sequence
+		inorder.verify(mockTax).deductTax(orderEntityCaptor.capture());
+		OrderEntity o2 = orderEntityCaptor.getValue();
+
+		Assert.assertSame(o1, o2);
 
 	}
+
 }

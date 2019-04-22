@@ -83,8 +83,21 @@ public class OrderServiceImpl implements OrderService {
 		newOrderEntity.setCustomerId(customerId);
 		newOrderEntity.setOrderNumber(UUID.randomUUID().toString());
 
+		/*
+		 * the following if..else is for testing: 1. InOrder Verification ->
+		 * test_inorder_Discount_Tax() 2. InOrder Verification on the same entity using
+		 * ArgumentCaptor ->test_InorderDiscountTax_OnSameEntity()
+		 */
 		if (orderDiscountService != null && orderTaxService != null) {
+
 			orderDiscountService.setDiscount(newOrderEntity);
+
+			// to check the fail scenario for test_InorderDiscountTax_OnSameEntity()
+//			OrderEntity newOrderEntity2 = new OrderEntity();
+//			newOrderEntity2.setCustomerId(customerId);
+//			newOrderEntity2.setOrderNumber(UUID.randomUUID().toString());
+//			orderTaxService.deductTax(newOrderEntity2);
+
 			orderTaxService.deductTax(newOrderEntity);
 		}
 
