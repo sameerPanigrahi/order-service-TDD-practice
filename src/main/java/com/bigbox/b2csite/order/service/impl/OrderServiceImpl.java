@@ -126,7 +126,7 @@ public class OrderServiceImpl implements OrderService {
 		return newOrderEntity.getOrderNumber();
 	}
 
-	public void completeOrder(long orderId) throws ServiceException {
+	public void completeOrder(long orderId) throws Exception {
 
 		try {
 			OrderEntity orderEntity = orderDao.findById(orderId);
@@ -146,12 +146,14 @@ public class OrderServiceImpl implements OrderService {
 
 			WarehouseManagementService.sendOrder(orderMessage);
 
+			int x = WarehouseManagementService.confirmShipment(orderMessage);
+
 			Date completionDate = new Date();
 			OrderCompletionAudit auditRecord = new OrderCompletionAudit();
 			auditRecord.setOrderNumber(orderEntity.getOrderNumber());
 			auditRecord.setCompletionDate(completionDate);
 
-			AUDIT_LOGGER.info(String.format("Order completed - %1$s", auditRecord));
+			// AUDIT_LOGGER.info(String.format("Order completed - %1$s", auditRecord));
 
 		} catch (DataAccessException e) {
 			// Log error
